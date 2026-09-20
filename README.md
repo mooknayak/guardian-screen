@@ -1,2 +1,28 @@
-# guardian-screen
-Amazon Build, Ship, Shape Hackathon — Fire TV entry
+# Guardian Screen — Fire TV
+
+AI-native ambient hub for Amazon Fire TV, built for the "Build, Ship, Shape" Amazon Developer Hackathon.
+Connects Fire TV, Ring, Bee and Alexa+ into one voice-first, safety-aware experience.
+
+## Modules
+- Frictionless Voice & Auto-Play — remote-free voice control
+- Deep Searchable Intelligence — multi-intent voice command parsing
+- Guardian Layer — Ring/Bee event triage + multi-guardian alert broadcast
+
+## Stack
+- AWS Lambda (Python 3.12)
+- Amazon DynamoDB
+- Amazon SNS (multi-guardian broadcast)
+- API Gateway (WebSocket)
+- S3 + CloudFront (Fire TV web frontend + admin panel)
+- Amazon Cognito (admin auth)
+
+## Structure
+```
+guardian-screen/
+├── lambda/
+│   ├── ring_event_handler.py
+│   └── requirements.txt
+├── docs/
+│   └── dynamodb-schema.md
+└── README.md
+```
