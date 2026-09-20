@@ -18,11 +18,23 @@ Connects Fire TV, Ring, Bee and Alexa+ into one voice-first, safety-aware experi
 
 ## Structure
 ```
-guardian-screen/
+guardian-screen/  (repo root)
 ├── lambda/
 │   ├── ring_event_handler.py
+│   ├── voice_intent_handler.py
+│   ├── media_control.py
+│   ├── camera_feed.py
+│   ├── admin_api.py
+│   ├── websocket_handlers.py
+│   ├── daily_summary.py
 │   └── requirements.txt
+├── frontend/
+│   ├── index.html
+│   └── admin.html
 ├── docs/
-│   └── dynamodb-schema.md
+│   ├── dynamodb-schema.md
+│   ├── architecture.md
+│   ├── iam-role-policy.json
+│   └── GUIDE.md
 └── README.md
 ```
