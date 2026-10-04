@@ -17,7 +17,7 @@
     {
       "Sid": "SNSPublish",
       "Effect": "Allow",
-      "Action": ["sns:Publish"],
+      "Action": ["sns:Publish", "sns:Subscribe"],
       "Resource": "*"
     },
     {
@@ -25,6 +25,12 @@
       "Effect": "Allow",
       "Action": ["execute-api:ManageConnections"],
       "Resource": "arn:aws:execute-api:*:*:*/*/POST/@connections/*"
+    },
+    {
+      "Sid": "BedrockOptional",
+      "Effect": "Allow",
+      "Action": ["bedrock:InvokeModel", "bedrock:Converse"],
+      "Resource": "*"
     },
     {
       "Sid": "Logs",
