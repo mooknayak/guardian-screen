@@ -18,6 +18,8 @@
 <div>
   <input id="name" placeholder="नाम">
   <input id="phone" placeholder="फ़ोन">
+  <input id="email" placeholder="ईमेल (अलर्ट के लिए)" type="email">
+  <select id="pref"><option value="all">सभी अलर्ट</option><option value="emergency_only">सिर्फ़ इमरजेंसी</option></select>
   <input id="priority" placeholder="प्राथमिकता (1,2,3)" type="number">
   <button onclick="addGuardian()">जोड़ें</button>
 </div>
@@ -27,28 +29,42 @@
 <table id="logsTable"><thead><tr><th>समय</th><th>सोर्स</th><th>सेवियरिटी</th><th>विवरण</th></tr></thead><tbody></tbody></table>
 
 <script>
-const API_URL = "https://REPLACE_WITH_YOUR_API_URL";
+// ✅ असली endpoint डाल दिया गया है
+const API_URL = "https://ymdeoe886j.execute-api.ap-south-1.amazonaws.com";
 const USER_ID = "user_123";
 
+// सुरक्षा: यूज़र का टेक्स्ट सीधे HTML में न जाए (XSS से बचाव)
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
 async function loadGuardians() {
-  const res = await fetch(`${API_URL}/guardians?user_id=${USER_ID}`);
-  const items = await res.json();
-  const body = document.querySelector("#guardianTable tbody");
-  body.innerHTML = "";
-  items.forEach(g => {
-    body.innerHTML += `<tr><td>${g.name}</td><td>${g.phone}</td><td>${g.priority}</td>
-      <td><button onclick="removeGuardian('${g.guardian_id}')">हटाएँ</button></td></tr>`;
-  });
+  try {
+    const res = await fetch(`${API_URL}/guardians?user_id=${USER_ID}`);
+    const items = await res.json();
+    const body = document.querySelector("#guardianTable tbody");
+    body.innerHTML = "";
+    items.forEach(g => {
+      body.innerHTML += `<tr><td>${esc(g.name)}</td><td>${esc(g.phone)}</td><td>${esc(g.priority)}</td>
+        <td><button onclick="removeGuardian('${esc(g.guardian_id)}')">हटाएँ</button></td></tr>`;
+    });
+  } catch (e) { console.error(e); }
 }
 
 async function addGuardian() {
-  const name = document.getElementById("name").value;
-  const phone = document.getElementById("phone").value;
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const notify_pref = document.getElementById("pref").value;
   const priority = Number(document.getElementById("priority").value || 1);
+  if (!name) { alert("नाम ज़रूरी है"); return; }
   await fetch(`${API_URL}/guardians?user_id=${USER_ID}`, {
     method: "POST",
-    body: JSON.stringify({ name, phone, priority }),
+    body: JSON.stringify({ name, phone, email, notify_pref, priority }),
   });
+  document.getElementById("name").value = "";
+  document.getElementById("phone").value = "";
+  document.getElementById("email").value = "";
   loadGuardians();
 }
 
@@ -58,18 +74,21 @@ async function removeGuardian(id) {
 }
 
 async function loadLogs() {
-  const res = await fetch(`${API_URL}/logs?user_id=${USER_ID}`);
-  const items = await res.json();
-  const body = document.querySelector("#logsTable tbody");
-  body.innerHTML = "";
-  items.forEach(i => {
-    const time = new Date(i.timestamp * 1000).toLocaleString();
-    body.innerHTML += `<tr><td>${time}</td><td>${i.source}</td><td>${i.severity}</td><td>${i.description}</td></tr>`;
-  });
+  try {
+    const res = await fetch(`${API_URL}/logs?user_id=${USER_ID}`);
+    const items = await res.json();
+    const body = document.querySelector("#logsTable tbody");
+    body.innerHTML = "";
+    items.forEach(i => {
+      const time = new Date(i.timestamp * 1000).toLocaleString();
+      body.innerHTML += `<tr><td>${esc(time)}</td><td>${esc(i.source)}</td><td>${esc(i.severity)}</td><td>${esc(i.description)}</td></tr>`;
+    });
+  } catch (e) { console.error(e); }
 }
 
 loadGuardians();
 loadLogs();
+setInterval(loadLogs, 5000); // लाइव लॉग: हर 5 सेकंड में अपने-आप ताज़ा
 </script>
 </body>
 </html>
