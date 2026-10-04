@@ -11,8 +11,15 @@
   .idle { color:#5c6577; font-size:20px; }
   .alert-banner { position:absolute; top:24px; right:24px; background:#e0654f; color:#fff; padding:14px 20px; border-radius:10px; max-width:360px; display:none; font-size:16px; }
   .pip { position:absolute; bottom:24px; right:24px; width:280px; height:160px; background:#1f2430; border:2px solid #e8a33d; border-radius:8px; display:none; align-items:center; justify-content:center; color:#e8a33d; }
-  .demo-row { padding:20px 32px; display:flex; gap:12px; }
+  .demo-row { padding:12px 32px; display:flex; gap:12px; flex-wrap:wrap; }
+  .voice-result { padding:0 32px 20px; color:#9aa3b5; font-size:14px; min-height:20px; }
+  input { flex:1; min-width:220px; background:#1f2430; border:1px solid #2a3040; color:#e7e9ee; padding:10px; border-radius:8px; font-size:14px; }
   button { background:#1f2430; color:#e7e9ee; border:1px solid #2a3040; padding:10px 16px; border-radius:8px; font-size:14px; }
+  /* TV (10-फ़ुट) के लिए बड़े अक्षर + रिमोट के फ़ोकस की साफ़ बॉर्डर */
+  header { font-size:34px; } .idle { font-size:28px; } .alert-banner { font-size:24px; max-width:520px; }
+  button { font-size:20px; padding:16px 24px; } button:focus { outline:4px solid #e8a33d; }
+  input { font-size:20px; padding:14px; } .voice-result { font-size:20px; }
+  #now { position:absolute; bottom:24px; left:32px; font-size:26px; color:#e8a33d; }
 </style>
 </head>
 <body>
@@ -20,32 +27,45 @@
 <div class="stage">
   <div class="idle" id="idle">कोई नया अलर्ट नहीं — सब कुछ सामान्य है</div>
   <div class="alert-banner" id="banner"></div>
+  <div id="now"></div>
   <div class="pip" id="pip">📹 Camera Feed</div>
 </div>
+
+<!-- डेमो: Ring / Bee इवेंट भेजने के बटन -->
 <div class="demo-row">
   <button onclick="simulate('ring')">डेमो: Ring इवेंट भेजो</button>
   <button onclick="simulate('bee')">डेमो: Bee SOS भेजो</button>
 </div>
 
+<!-- नया: वॉइस कमांड का डेमो (टाइप करके) -->
+<div class="demo-row">
+  <input id="voiceText" value="बाहर का कैमरा दिखाओ और अगला एपिसोड चलाओ">
+  <button onclick="sendVoice()">वॉइस कमांड भेजो</button>
+  <button onclick="listen()">🎤 बोलिए</button>
+</div>
+<div class="voice-result" id="voiceResult"></div>
+
 <script>
-// इसे अपने असली API Gateway WebSocket endpoint से बदलें
-const WEBSOCKET_URL = "wss://REPLACE_WITH_YOUR_WEBSOCKET_URL?user_id=user_123";
-// इसे अपने असली REST API endpoint से बदलें (demo trigger के लिए)
-const API_URL = "https://REPLACE_WITH_YOUR_API_URL";
+// ✅ असली endpoints डाल दिए गए हैं
+const WEBSOCKET_URL = "wss://pojn49xwei.execute-api.ap-south-1.amazonaws.com/prod?user_id=user_123";
+const API_URL = "https://ymdeoe886j.execute-api.ap-south-1.amazonaws.com";
+const USER_ID = "user_123";
 
 let socket;
 function connect() {
   socket = new WebSocket(WEBSOCKET_URL);
   socket.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-    handleMessage(msg);
+    try { handleMessage(JSON.parse(event.data)); } catch (e) { console.error(e); }
   };
+  // कनेक्शन टूटे तो 3 सेकंड बाद फिर जोड़ो
   socket.onclose = () => setTimeout(connect, 3000);
+  socket.onerror = () => socket.close();
 }
 
+// एक ही फ़ंक्शन: WebSocket संदेश और HTTP जवाब, दोनों यहीं से स्क्रीन पर दिखते हैं
 function handleMessage(msg) {
   document.getElementById("idle").style.display = "none";
-  if (msg.action === "show_camera") {
+  if (msg.action === "show_camera" && msg.severity !== "normal") {
     document.getElementById("pip").style.display = "flex";
   }
   if (msg.severity === "medium" || msg.severity === "emergency") {
@@ -57,14 +77,46 @@ function handleMessage(msg) {
 
 async function simulate(source) {
   const payload = source === "ring"
-    ? { user_id: "user_123", source: "ring", payload: { visitor_type: "unknown_person" } }
-    : { user_id: "user_123", source: "bee", payload: { type: "sos" } };
+    ? { user_id: USER_ID, source: "ring", payload: { visitor_type: "unknown_person" } }
+    : { user_id: USER_ID, source: "bee", payload: { type: "sos" } };
   try {
-    await fetch(API_URL + "/ring-event", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    const res = await fetch(API_URL + "/ring-event", { method: "POST", body: JSON.stringify(payload) });
+    const data = await res.json();
+    handleMessage({ action: "show_camera", severity: data.severity, caption: data.caption });
   } catch (e) { console.error(e); }
+}
+
+async function sendVoice() {
+  const text = document.getElementById("voiceText").value;
+  const out = document.getElementById("voiceResult");
+  out.textContent = "भेज रहे हैं…";
+  try {
+    const res = await fetch(API_URL + "/voice-command", {
+      method: "POST",
+      body: JSON.stringify({ user_id: USER_ID, command_text: text }),
+    });
+    const data = await res.json();
+    const lines = [];
+    (data.actions || []).forEach(a => {
+      if (a.action === "show_camera") { handleMessage({ action: "show_camera" }); lines.push("📹 कैमरा चालू"); }
+      else if (a.action === "play_next_episode") {
+        const t = (a.title || "आपका पसंदीदा शो") + " — एपिसोड " + (a.next_episode || 1);
+        document.getElementById("now").textContent = "▶️ अब चल रहा है: " + t; lines.push("▶️ " + t);
+      }
+      else if (a.action === "emergency_triggered") { handleMessage({ severity: "emergency", caption: "SOS — गार्डियंस को सूचना भेजी गई" }); lines.push("🚨 गार्डियंस को अलर्ट गया"); }
+      else lines.push("❓ समझ नहीं आया: " + (a.text || ""));
+    });
+    out.textContent = lines.join("  |  ") || "कोई एक्शन नहीं मिला";
+  } catch (e) { out.textContent = "त्रुटि: " + e; }
+}
+
+// माइक (Chrome/Silk में Web Speech API): हिंदी में बोलिए, कमांड अपने-आप चली जाएगी
+function listen() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert("इस ब्राउज़र में माइक सपोर्ट नहीं है, टेक्स्ट बॉक्स इस्तेमाल करें"); return; }
+  const r = new SR(); r.lang = "hi-IN";
+  r.onresult = (e) => { document.getElementById("voiceText").value = e.results[0][0].transcript; sendVoice(); };
+  r.start();
 }
 
 connect();
