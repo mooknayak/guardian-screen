@@ -28,7 +28,7 @@
   <div class="idle" id="idle">कोई नया अलर्ट नहीं — सब कुछ सामान्य है</div>
   <div class="alert-banner" id="banner"></div>
   <div id="now"></div>
-  <div class="pip" id="pip">📹 Camera Feed</div>
+  <div class="pip" id="pip"><span id="camMsg">📹 Camera Feed</span><video id="camVideo" autoplay muted playsinline style="display:none;width:100%;height:100%;object-fit:cover"></video></div>
 </div>
 
 <!-- डेमो: Ring / Bee इवेंट भेजने के बटन -->
@@ -67,6 +67,7 @@ function handleMessage(msg) {
   document.getElementById("idle").style.display = "none";
   if (msg.action === "show_camera" && msg.severity !== "normal") {
     document.getElementById("pip").style.display = "flex";
+    startCamera();
   }
   if (msg.severity === "medium" || msg.severity === "emergency") {
     const b = document.getElementById("banner");
@@ -108,6 +109,20 @@ async function sendVoice() {
     });
     out.textContent = lines.join("  |  ") || "कोई एक्शन नहीं मिला";
   } catch (e) { out.textContent = "त्रुटि: " + e; }
+}
+
+// कैमरा: डिवाइस का असली कैमरा दिखाता है (अनुमति माँगता है); न मिले तो वजह लिख देता है
+let camStream = null;
+async function startCamera() {
+  const msg = document.getElementById("camMsg"), vid = document.getElementById("camVideo");
+  if (camStream) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    msg.textContent = "📹 इस ब्राउज़र में कैमरा सपोर्ट नहीं है"; return;
+  }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+    vid.srcObject = camStream; vid.style.display = "block"; msg.style.display = "none";
+  } catch (e) { msg.textContent = "📹 कैमरा चालू नहीं हो सका (" + e.name + ")"; }
 }
 
 // माइक (Chrome/Silk में Web Speech API): हिंदी में बोलिए, कमांड अपने-आप चली जाएगी
