@@ -1,6 +1,6 @@
 """
 voice_intent_handler.py
-Guardian Screen — parses a (possibly multi-part) voice command into
+Guardian Screen â€” parses a (possibly multi-part) voice command into
 separate tasks and dispatches each to the right action.
 Runtime: Python 3.12
 
@@ -24,16 +24,18 @@ ALERT_TOPIC_ARN = os.environ.get("ALERT_TOPIC_ARN")
 
 USERS_TABLE = os.environ.get("USERS_TABLE", "Users")
 EVENTLOGS_TABLE = os.environ.get("EVENTLOGS_TABLE", "EventLogs")
-BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID")  # खाली हो तो सिर्फ़ keyword वाला पार्सर चलेगा
+BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID")  # à¤–à¤¾à¤²à¥€ à¤¹à¥‹ à¤¤à¥‹ à¤¸à¤¿à¤°à¥à¤«à¤¼ keyword à¤µà¤¾à¤²à¤¾ à¤ªà¤¾à¤°à¥à¤¸à¤° à¤šà¤²à¥‡à¤—à¤¾
 
 guardians_table = dynamodb.Table(GUARDIANS_TABLE)
 users_table = dynamodb.Table(USERS_TABLE)
 eventlogs_table = dynamodb.Table(EVENTLOGS_TABLE)
 
-CAMERA_WORDS = ["कैमरा", "camera", "darwaza", "दरवाज़ा"]
-MEDIA_WORDS = ["चलाओ", "play", "एपिसोड", "episode", "movie", "मूवी"]
-SOS_WORDS = ["बचाओ", "help", "sos", "मदद"]
-SPLIT_WORDS = [" और ", " and ", ",", " फिर "]
+CAMERA_WORDS = ["à¤•à¥ˆà¤®à¤°", "à¤•à¥ˆà¤®à¥‡à¤°", "camera", "cam ", "cctv", "à¤¸à¥€à¤¸à¥€à¤Ÿà¥€à¤µà¥€", "à¤«à¥€à¤¡", "feed",
+                "à¤¦à¤°à¤µà¤¾à¤œ", "darwaza", "door", "à¤¬à¤¾à¤¹à¤° à¤¦à¥‡à¤–", "bahar"]
+MEDIA_WORDS = ["à¤šà¤²à¤¾", "play", "à¤à¤ªà¤¿à¤¸à¥‹à¤¡", "episode", "movie", "à¤®à¥‚à¤µà¥€", "à¤«à¤¿à¤²à¥à¤®", "film",
+               "à¤¸à¥€à¤°à¥€à¤œ", "series", "à¤¶à¥‹ "]
+SOS_WORDS = ["à¤¬à¤šà¤¾à¤“", "help", "sos", "à¤®à¤¦à¤¦"]
+SPLIT_WORDS = [" à¤”à¤° ", " and ", " aur ", ",", " à¤«à¤¿à¤° ", " phir ", " à¤¤à¤¥à¤¾ "]
 
 
 def split_command(text: str):
@@ -55,13 +57,13 @@ def classify(part: str) -> str:
 
 
 def parse_with_bedrock(text: str):
-    """टूटी-फूटी/हिंग्लिश कमांड को Amazon Bedrock से टास्क में बाँटता है। कुछ भी गड़बड़ हो तो None लौटाता है।"""
+    """à¤Ÿà¥‚à¤Ÿà¥€-à¤«à¥‚à¤Ÿà¥€/à¤¹à¤¿à¤‚à¤—à¥à¤²à¤¿à¤¶ à¤•à¤®à¤¾à¤‚à¤¡ à¤•à¥‹ Amazon Bedrock à¤¸à¥‡ à¤Ÿà¤¾à¤¸à¥à¤• à¤®à¥‡à¤‚ à¤¬à¤¾à¤à¤Ÿà¤¤à¤¾ à¤¹à¥ˆà¥¤ à¤•à¥à¤› à¤­à¥€ à¤—à¤¡à¤¼à¤¬à¤¡à¤¼ à¤¹à¥‹ à¤¤à¥‹ None à¤²à¥Œà¤Ÿà¤¾à¤¤à¤¾ à¤¹à¥ˆà¥¤"""
     if not BEDROCK_MODEL_ID:
         return None
     try:
-        prompt = ("नीचे की वॉइस कमांड को अलग-अलग टास्क में बाँटो। हर टास्क का type इनमें से एक हो: "
-                  "camera, media, emergency, unknown। सिर्फ़ JSON सूची लौटाओ, जैसे "
-                  '[{"type":"camera","text":"..."}]। कमांड: ' + text)
+        prompt = ("à¤¨à¥€à¤šà¥‡ à¤•à¥€ à¤µà¥‰à¤‡à¤¸ à¤•à¤®à¤¾à¤‚à¤¡ à¤•à¥‹ à¤…à¤²à¤—-à¤…à¤²à¤— à¤Ÿà¤¾à¤¸à¥à¤• à¤®à¥‡à¤‚ à¤¬à¤¾à¤à¤Ÿà¥‹à¥¤ à¤¹à¤° à¤Ÿà¤¾à¤¸à¥à¤• à¤•à¤¾ type à¤‡à¤¨à¤®à¥‡à¤‚ à¤¸à¥‡ à¤à¤• à¤¹à¥‹: "
+                  "camera, media, emergency, unknownà¥¤ à¤¸à¤¿à¤°à¥à¤«à¤¼ JSON à¤¸à¥‚à¤šà¥€ à¤²à¥Œà¤Ÿà¤¾à¤“, à¤œà¥ˆà¤¸à¥‡ "
+                  '[{"type":"camera","text":"..."}]à¥¤ à¤•à¤®à¤¾à¤‚à¤¡: ' + text)
         client = boto3.client("bedrock-runtime")
         r = client.converse(modelId=BEDROCK_MODEL_ID,
                             messages=[{"role": "user", "content": [{"text": prompt}]}],
@@ -84,7 +86,7 @@ def parse_intents(text: str):
 
 
 def get_favorite(user_id: str):
-    """Users तालिका से पसंदीदा शो; न मिले तो डेमो शो ताकि डेमो कभी न रुके।"""
+    """Users à¤¤à¤¾à¤²à¤¿à¤•à¤¾ à¤¸à¥‡ à¤ªà¤¸à¤‚à¤¦à¥€à¤¦à¤¾ à¤¶à¥‹; à¤¨ à¤®à¤¿à¤²à¥‡ à¤¤à¥‹ à¤¡à¥‡à¤®à¥‹ à¤¶à¥‹ à¤¤à¤¾à¤•à¤¿ à¤¡à¥‡à¤®à¥‹ à¤•à¤­à¥€ à¤¨ à¤°à¥à¤•à¥‡à¥¤"""
     try:
         favs = users_table.get_item(Key={"user_id": user_id}).get("Item", {}).get("favorite_shows", [])
         if favs:
@@ -105,12 +107,12 @@ def log_voice(user_id: str, severity: str, text: str, notified: list):
 def trigger_emergency(user_id: str, text: str):
     response = guardians_table.query(KeyConditionExpression=Key("user_id").eq(user_id))
     guardians = sorted(response.get("Items", []), key=lambda g: g.get("priority", 99))
-    if guardians:  # एक ही publish: हर subscriber को एक कॉपी
+    if guardians:  # à¤à¤• à¤¹à¥€ publish: à¤¹à¤° subscriber à¤•à¥‹ à¤à¤• à¤•à¥‰à¤ªà¥€
         sns.publish(
             TopicArn=ALERT_TOPIC_ARN,
             Subject="Guardian Screen Alert (emergency)",
-            Message=json.dumps({"default": f"वॉइस SOS: {text}", "sms": f"वॉइस SOS: {text}",
-                                "email": f"Guardian Screen वॉइस SOS: {text}"}),
+            Message=json.dumps({"default": f"à¤µà¥‰à¤‡à¤¸ SOS: {text}", "sms": f"à¤µà¥‰à¤‡à¤¸ SOS: {text}",
+                                "email": f"Guardian Screen à¤µà¥‰à¤‡à¤¸ SOS: {text}"}),
             MessageStructure="json",
             MessageAttributes={"severity": {"DataType": "String", "StringValue": "emergency"}},
         )
@@ -120,7 +122,7 @@ def trigger_emergency(user_id: str, text: str):
 def lambda_handler(event, context):
     """
     Expected input:
-    { "user_id": "user_123", "command_text": "बाहर का कैमरा दिखाओ और अगला एपिसोड चलाओ" }
+    { "user_id": "user_123", "command_text": "à¤¬à¤¾à¤¹à¤° à¤•à¤¾ à¤•à¥ˆà¤®à¤°à¤¾ à¤¦à¤¿à¤–à¤¾à¤“ à¤”à¤° à¤…à¤—à¤²à¤¾ à¤à¤ªà¤¿à¤¸à¥‹à¤¡ à¤šà¤²à¤¾à¤“" }
     """
     body = json.loads(event["body"]) if event.get("body") else event
     user_id = body["user_id"]
@@ -145,7 +147,7 @@ def lambda_handler(event, context):
 
     return {
         "statusCode": 200,
-        # नया: ब्राउज़र को जवाब पढ़ने देने के लिए CORS हेडर
+        # à¤¨à¤¯à¤¾: à¤¬à¥à¤°à¤¾à¤‰à¤œà¤¼à¤° à¤•à¥‹ à¤œà¤µà¤¾à¤¬ à¤ªà¤¢à¤¼à¤¨à¥‡ à¤¦à¥‡à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ CORS à¤¹à¥‡à¤¡à¤°
         "headers": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
         "body": json.dumps({"tasks": tasks, "actions": results}),
     }
